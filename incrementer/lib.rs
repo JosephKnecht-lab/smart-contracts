@@ -36,6 +36,13 @@ mod incrementer {
         pub fn get(&self) {
             // Contract Message
         }
+
+        #[ink(message)]
+        pub fn my_getter(&self) -> i32 {
+            self.value
+        }
+        
+        
     }
 
     #[cfg(test)]
