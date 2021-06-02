@@ -55,6 +55,16 @@ mod incrementer {
             let balance = self.my_value.get(of).unwrap_or(&0);
             *balance
         }
+
+        #[ink(message)]
+        pub fn inc_mine(&mut self, by: i32) {
+            // ACTION: Get the `caller` of this function.
+            let caller = self.env().caller();
+            // ACTION: Get `my_value` that belongs to `caller` by using `my_value_or_zero`.
+            let number = self.my_number_or_zero(&caller);
+            // ACTION: Insert the incremented `value` back into the mapping.
+            self.my_value.insert(caller, number + by);
+        }
         
         
     }
@@ -82,9 +92,13 @@ mod incrementer {
 
         #[ink::test]
         fn my_value_works() {
-            let contract = Incrementer::new(11);
+            let mut contract = Incrementer::new(11);
             assert_eq!(contract.get(), 11);
             assert_eq!(contract.get_mine(), 0);
+            contract.inc_mine(5);
+            assert_eq!(contract.get_mine(), 5);
+            contract.inc_mine(10);
+            assert_eq!(contract.get_mine(), 15);
         }
 
 
