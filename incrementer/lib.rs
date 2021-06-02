@@ -12,22 +12,23 @@ mod incrementer {
         // my_account: AccountId,
         // Store some Balance
         // my_balance: Balance,
-        number: u32,
+        // number: u32,
+        value: i32,
     }
 
     impl Incrementer {
         #[ink(constructor)]
-        pub fn new(init_value: u32) -> Self {
+        pub fn new(init_value: i32) -> Self {
             // Contract Constructor
             Self{
-                number: init_value,
+                value: init_value,
             }
         }
 
         #[ink(constructor)]
         pub fn default() -> Self {
             Self {
-                number: Default::default(),
+                value: 0,
             }
         }
 
