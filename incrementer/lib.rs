@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use ink_lang as ink;
-use ink_storage::collections::{Vec, HashMap, Stash, Bitvec};
+//use ink_storage::collections::{Vec, HashMap, Stash, Bitvec};
 
 
 #[ink::contract]
@@ -37,6 +37,11 @@ mod incrementer {
         pub fn get(&self) -> i32 {
             self.value
         }
+
+        #[ink(message)]
+        pub fn inc(&mut self, by: i32) {
+            self.value += by;
+        }
         
         
     }
@@ -48,7 +53,20 @@ mod incrementer {
 
         #[ink::test]
         fn default_works() {
-            // Test Your Contract
+            let contract = Incrementer::default();
+            assert_eq!(contract.get(), 0);        
         }
+
+        #[ink::test]
+        fn it_works() {
+            let mut contract = Incrementer::new(42);
+            assert_eq!(contract.get(), 42);
+            contract.inc(5);
+            assert_eq!(contract.get(), 47);
+            contract.inc(-50);
+            assert_eq!(contract.get(), -3);
+        }
+
+
     }
 }
