@@ -2,17 +2,17 @@
 Contracts that run on Substrate
 
 # commands
-⋅⋅* Create contract: 
++ Create contract: 
 ```
 cargo contract new name
 ```
 
-⋅⋅* Build contract: 
++ Build contract: 
 ```
 cargo +nightly contract build
 ```
 
-⋅⋅* Test contract: 
++ Test contract: 
 ```
 cargo +nightly test
 ```
