@@ -11,6 +11,9 @@ mod erc20 {
         total_supply: Balance,
         /// The balance of each user.
         balances: ink_storage::collections::HashMap<AccountId, Balance>,
+
+        /// Balances that are spendable by non-owners: (owner, spender) -> allowed
+        allowances: ink_storage::collections::HashMap<(AccountId, AccountId), Balance>,
     }
 
     #[ink(event)]
@@ -19,6 +22,15 @@ mod erc20 {
         from: Option<AccountId>,
         #[ink(topic)]
         to: Option<AccountId>,
+        value: Balance,
+    }
+
+    #[ink(event)]
+    pub struct Approval {
+        #[ink(topic)]
+        owner: Option<AccountId>,
+        #[ink(topic)]
+        spender: Option<AccountId>,
         value: Balance,
     }
 
@@ -45,6 +57,7 @@ mod erc20 {
             Self {
                 total_supply: initial_supply,
                 balances,
+                allowances: ink_storage::collections::HashMap::new(),
             }
         }
 
@@ -59,6 +72,50 @@ mod erc20 {
             // ACTION: Return the balance of `owner`
             self.balance_of_or_zero(&owner)
             //   HINT: Use `balance_of_or_zero` to get the `owner` balance
+        }
+
+        #[ink(message)]
+        pub fn approve(&mut self, spender: AccountId, value: Balance) -> bool {
+            // ACTION: Get the `self.env().caller()` and store it as the `owner`
+            let owner = self.env().caller();
+
+            // ACTION: Insert the new allowance into the `allowances` HashMap
+            //   HINT: The key tuple is `(owner, spender)`
+            self.allowances.insert((owner, spender),value);
+            
+            // ACTION: `emit` the `Approval` event you created using these values
+            self.env().emit_event( Approval {
+                owner:Some(owner),
+                spender: Some(spender),
+                value,
+            });
+            // ACTION: Return true if everything was successful
+            true
+        }
+
+        #[ink(message)]
+        pub fn allowance(&self, owner: AccountId, spender: AccountId) -> Balance {
+            // ACTION: Create a getter for the `allowances` HashMap
+            //   HINT: Take a look at the getters above if you forget the details
+            // ACTION: Return the `allowance` value
+            self.allowance_of_or_zero(&owner, &spender)
+        }
+
+        #[ink(message)]
+        pub fn transfer_from(&mut self, from: AccountId, to: AccountId, value: Balance) -> bool {
+            // ACTION: Get the allowance for `(from, self.env().caller())` using `allowance_of_or_zero`
+            let caller = self.env().caller();
+            let allowance = self.allowance_of_or_zero(&from,&caller);
+            // ACTION: `if` the `allowance` is less than the `value`, exit early and return `false`
+            if allowance < value {
+                return false
+            }
+            // ACTION: `insert` the new allowance into the map for `(from, self.env().caller())`
+            self.allowances.insert((from, caller), allowance - value);
+            // ACTION: Finally, call the `transfer_from_to` for `from` and `to`
+            self.transfer_from_to(from, to, value);
+            // ACTION: Return true if everything was successful
+            true
         }
 
         #[ink(message)]
@@ -98,6 +155,19 @@ mod erc20 {
             *self.balances.get(owner).unwrap_or(&0)
             // ACTION: Return the balance
         }
+
+        fn allowance_of_or_zero(&self, owner: &AccountId, spender: &AccountId) -> Balance {
+            // ACTION: `get` the `allowances` of `(owner, spender)` and `unwrap_or` return `0`.
+
+            // If you are new to Rust, you may wonder what's the deal with all the asterisks and
+            // ampersends.
+            //
+            // In brief, using `&` if we want to get the address of a value (aka reference of the
+            // value), and using `*` if we have the reference of a value and want to get the value
+            // back (aka dereferencing).
+            // To read more: https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html
+            *self.allowances.get(&(*owner, *spender)).unwrap_or(&0)
+        }
     }
 
     #[cfg(test)]
@@ -127,6 +197,15 @@ mod erc20 {
             assert!(contract.transfer(AccountId::from([0x0; 32]), 10));
             assert_eq!(contract.balance_of(AccountId::from([0x0; 32])), 10);
             assert!(!contract.transfer(AccountId::from([0x0; 32]), 100));
+        }
+
+        #[ink::test]
+        fn transfer_from_works() {
+            let mut contract = Erc20::new(100);
+            assert_eq!(contract.balance_of(AccountId::from([0x1; 32])), 100);
+            contract.approve(AccountId::from([0x1; 32]), 20);
+            contract.transfer_from(AccountId::from([0x1; 32]), AccountId::from([0x0; 32]), 10);
+            assert_eq!(contract.balance_of(AccountId::from([0x0; 32])), 10);
         }
     }
 }
